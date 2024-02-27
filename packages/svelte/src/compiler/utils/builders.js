@@ -90,7 +90,7 @@ export function labeled(name, body) {
 
 /**
  * @param {string | import('estree').Expression} callee
- * @param {...(import('estree').Expression | import('estree').SpreadElement)} args
+ * @param {...(import('estree').Expression | import('estree').SpreadElement | undefined)} args
  * @returns {import('estree').CallExpression}
  */
 export function call(callee, ...args) {
@@ -102,7 +102,7 @@ export function call(callee, ...args) {
 	return {
 		type: 'CallExpression',
 		callee,
-		arguments: args,
+		arguments: /** @type {Array<import('estree').Expression | import('estree').SpreadElement>} **/ (args),
 		optional: false
 	};
 }

@@ -168,13 +168,56 @@ export function svg_replace(node) {
 }
 
 /**
+ * @param {import('./types.js').TemplateElement[]} json
+ * @param {Node[]} fragment
+ */
+function validate_trees(json, fragment) {
+	const length = Math.max(json.length, fragment.length);
+	let offset = 0;
+	for (let i = 0; i < length; i++) {
+		const json_node = json[i];
+		/** @type {Node | null} */
+		let dom_node = fragment[i + offset];
+		debugger
+		while (dom_node && dom_node.nodeType !== 1) {
+			dom_node = dom_node.nextSibling;
+			offset++;
+		}
+		if (json_node == null && dom_node == null) {
+			return;
+		}
+		if (!json_node || !dom_node || dom_node.nodeName.toLowerCase() !== json_node.tag) {
+			throw new Error(
+				'Svelte encountered a DOM template that maybe been altered by the browser or a browser extension. ' +
+					'This can occur when the browser encounters invalid markup in your HTML, which results in the browser trying to ' +
+					`fix the HTML.\n\nSvelte expected HTML elements:\n\n ${json.map((n) => `<${n.tag}>`).join(', ')}\n\n` +
+					`However, the browser rendered HTML elements:\n\n ${fragment
+						.filter((n) => n.nodeType === 1)
+						.map((n) => `<${n.nodeName.toLowerCase()}>`)
+						.join(', ')}\n`
+			);
+		}
+		const json_children = json_node.children;
+		const dom_children = Array.from(dom_node.childNodes);
+		validate_trees(json_children, dom_children);
+	}
+}
+
+/**
  * @param {boolean} is_fragment
  * @param {boolean} use_clone_node
  * @param {null | Text | Comment | Element} anchor
  * @param {() => Node} [template_element_fn]
+ * @param {string} [template_element_string]
  * @returns {Element | DocumentFragment | Node[]}
  */
-function open_template(is_fragment, use_clone_node, anchor, template_element_fn) {
+function open_template(
+	is_fragment,
+	use_clone_node,
+	anchor,
+	template_element_fn,
+	template_element_string
+) {
 	if (hydrating) {
 		if (anchor !== null) {
 			hydrate_block_anchor(anchor, false);
@@ -183,34 +226,45 @@ function open_template(is_fragment, use_clone_node, anchor, template_element_fn)
 		// so we need to is_fragment flag to properly handle hydrated content accordingly.
 		const fragment = current_hydration_fragment;
 		if (fragment !== null) {
+			if (DEV && template_element_string) {
+				const json = JSON.parse(template_element_string);
+				validate_trees(json, fragment);
+			}
 			return is_fragment ? fragment : /** @type {Element} */ (fragment[0]);
 		}
 	}
-	return use_clone_node
+	const cloned = use_clone_node
 		? clone_node(/** @type {() => Element} */ (template_element_fn)(), true)
 		: document.importNode(/** @type {() => Element} */ (template_element_fn)(), true);
+	if (DEV && template_element_string) {
+		const json = JSON.parse(template_element_string);
+		validate_trees(json, cloned.nodeType === 11 ? Array.from(cloned.childNodes) : [cloned]);
+	}
+	return cloned;
 }
 
 /**
  * @param {null | Text | Comment | Element} anchor
  * @param {boolean} use_clone_node
  * @param {() => Node} [template_element_fn]
+ * @param {string} [template_element_string]
  * @returns {Element | DocumentFragment | Node[]}
  */
 /*#__NO_SIDE_EFFECTS__*/
-export function open(anchor, use_clone_node, template_element_fn) {
-	return open_template(false, use_clone_node, anchor, template_element_fn);
+export function open(anchor, use_clone_node, template_element_fn, template_element_string) {
+	return open_template(false, use_clone_node, anchor, template_element_fn, template_element_string);
 }
 
 /**
  * @param {null | Text | Comment | Element} anchor
  * @param {boolean} use_clone_node
  * @param {() => Node} [template_element_fn]
+ * @param {string} [template_element_string]
  * @returns {Element | DocumentFragment | Node[]}
  */
 /*#__NO_SIDE_EFFECTS__*/
-export function open_frag(anchor, use_clone_node, template_element_fn) {
-	return open_template(true, use_clone_node, anchor, template_element_fn);
+export function open_frag(anchor, use_clone_node, template_element_fn, template_element_string) {
+	return open_template(true, use_clone_node, anchor, template_element_fn, template_element_string);
 }
 
 const space_template = template(' ', false);

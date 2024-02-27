@@ -1125,6 +1125,8 @@ function create_block(parent, name, nodes, context) {
 		update_effects: [],
 		after_update: [],
 		template: [],
+		template_elements: [],
+		current_template_element: null,
 		metadata: {
 			context: {
 				template_needs_import_node: false,
@@ -1166,7 +1168,8 @@ function create_block(parent, name, nodes, context) {
 					'$.open',
 					b.id('$$anchor'),
 					b.literal(!state.metadata.context.template_needs_import_node),
-					template_name
+					template_name,
+					context.state.options.dev ? b.literal(JSON.stringify(state.template_elements)) : undefined
 				)
 			),
 			...state.init
@@ -1224,7 +1227,8 @@ function create_block(parent, name, nodes, context) {
 							'$.open_frag',
 							b.id('$$anchor'),
 							b.literal(!state.metadata.context.template_needs_import_node),
-							template_name
+							template_name,
+							context.state.options.dev ? b.literal(JSON.stringify(state.template_elements)) : undefined
 						)
 					)
 				);
@@ -1948,6 +1952,18 @@ export const template_visitors = {
 			...context.state.metadata,
 			namespace: determine_namespace_for_children(node, context.state.metadata.namespace)
 		};
+		const template_element = {
+			tag: node.name,
+			children: []
+		};
+		const current_template_element = context.state.current_template_element;
+
+		if (current_template_element === null) {
+			context.state.template_elements.push(template_element);
+		} else {
+			current_template_element.children.push(template_element);
+		}
+		context.state.current_template_element = template_element;
 
 		context.state.template.push(`<${node.name}`);
 
@@ -2157,6 +2173,8 @@ export const template_visitors = {
 		if (!VoidElements.includes(node.name)) {
 			context.state.template.push(`</${node.name}>`);
 		}
+
+		context.state.current_template_element = current_template_element;
 	},
 	SvelteElement(node, context) {
 		context.state.template.push(`<!>`);

@@ -349,6 +349,8 @@ export type TransitionFn<P> = (
 	options: { direction?: 'in' | 'out' | 'both' }
 ) => TransitionPayload;
 
+export type TemplateElement = { tag: string, children: TemplateElement[] }
+
 export type AnimateFn<P> = (
 	element: Element,
 	rects: { from: DOMRect; to: DOMRect },

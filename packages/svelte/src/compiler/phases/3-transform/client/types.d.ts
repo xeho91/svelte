@@ -23,6 +23,8 @@ export interface ClientTransformState extends TransformState {
 	readonly legacy_reactive_statements: Map<LabeledStatement, Statement>;
 }
 
+export interface TemplateElement { tag: string, children: TemplateElement[] }
+
 export interface ComponentClientTransformState extends ClientTransformState {
 	readonly analysis: ComponentAnalysis;
 	readonly options: ValidatedCompileOptions;
@@ -45,6 +47,9 @@ export interface ComponentClientTransformState extends ClientTransformState {
 	readonly after_update: Statement[];
 	/** The HTML template string */
 	readonly template: string[];
+	/** The HTML element tree */
+	readonly template_elements: TemplateElement[];
+	current_template_element: null | TemplateElement;
 	readonly metadata: {
 		namespace: Namespace;
 		bound_contenteditable: boolean;
