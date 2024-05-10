@@ -1,5 +1,11 @@
 # svelte
 
+## 5.0.0-next.127
+
+### Patch Changes
+
+- fix: handle falsy prop aliases correctly ([#11539](https://github.com/sveltejs/svelte/pull/11539))
+
 ## 5.0.0-next.126
 
 ### Patch Changes
